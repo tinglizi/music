@@ -1,55 +1,55 @@
 <template>
     <div class="player">
-      <div class="normal-player">
+      <div class="normal-player" v-show="play">
         <div class="background">
           <div class="filter"></div>
-          <img src="http://p1.music.126.net/vmCcDvD1H04e9gm97xsCqg==/109951163350929740.jpg" alt="">
+          <img :src="songs.picurl" alt="" class="image">
         </div>
         <div class="top">
-          <div class="back">
+          <div class="back" @click="back">
             <i class="iconfont icon-jiantou2"></i>
           </div>
-          <div class="title">笑抽</div>
-          <h2 class="subtitle">毛不已</h2>
+          <div class="title">{{songs.songName}}</div>
+          <h2 class="subtitle">{{songs.singer}}</h2>
         </div>
         <div class="middle">
           <div class="middle-l">
             <div class="cd-wrapper">
               <div class="cd play">
-                <img src="" alt="" class="image">
+                <img :src="songs.picurl" alt="" class="image">
               </div>
             </div>
           </div>
           <div class="middle-r" style="display: none">
-            <div class="lyric-wrapper"></div>
+            <div class="lyric-wrapper">
+              <div class="currentLyric" v-if="currentLyric">
+                <p ref="lyricLine" class="text" v-for="(line, index) in currentLyric.lines" :key="index">
+                  {{line.txt}}
+                </p>
+              </div>
+              <p class="no-lyric" >没有歌词了</p>
+            </div>
           </div>
         </div>
         <div class="bottom">
           <div class="progress-wrapper">
-            <span class="time time-l">0:00</span>
+            <span class="time time-l">{{format(currentTime)}}</span>
             <div class="progress-bar-wrapper">
-              <div class="progress-bar">
-                <div class="bar-inner">
-                  <div class="progress"></div>
-                  <div class="progress-btn-wrapper">
-                    <div class="progress-btn"></div>
-                  </div>
-                </div>
-              </div>
+              <progress-bar :percent="progress" @percentChange="progressChange"></progress-bar>
             </div>
-            <span class="time time-l">0:00</span>
+            <span class="time time-r">{{format(duration)}}</span>
           </div>
           <div class="operators">
-            <div class="icon i-left">
+            <div class="icon i-left" @click="changeMode">
               <i class="iconfont icon-liebiaoxunhuan mode"></i>
             </div>
-            <div class="icon i-left">
+            <div class="icon i-left" @click="prev">
               <i class="iconfont icon-shangyishou1 mode"></i>
             </div>
-            <div class="icon i-center">
-              <i class="iconfont icon-bofang mode"></i>
+            <div class="icon i-center" @click="togglePlay">
+              <i class="iconfont mode" :class="togglePlayClass ? 'icon-zanting' : 'icon-bofang'"></i>
             </div>
-            <div class="icon i-right">
+            <div class="icon i-right" @click="next">
               <i class="iconfont icon-shangyishou mode"></i>
             </div>
             <div class="icon i-right">
@@ -58,32 +58,214 @@
           </div>
         </div>
       </div>
+      <!-- 小窗口播放 -->
+      <div class="mini-player" v-show="showList" @click="showFullScreen">
+        <div class="icon">
+          <img :src="songs.picurl" alt="">
+        </div>
+        <div class="text">
+          <h2 class="name">{{songs.songName}}</h2>
+          <div class="desc">{{songs.singer}}</div>
+        </div>
+        <div class="control">
+          <div class="progress-circle" @click.stop="togglePlay">
+            <i class="iconfont " :class="togglePlayClass ? 'icon-zanting' : 'icon-bofang'"></i>
+          </div>
+        </div>
+        <div class="control">
+          <div class="progress-circle" @click.stop="showPlayList">
+            <i class="iconfont icon-liebiao1"></i>
+          </div>
+        </div>
+      </div>
+      <!-- 播放列表 -->
+      <play-list :isShow="isshowPlayList" @hide="hide"></play-list>
+      <!--播放音频-->
+      <audio class="playAudio" ref="audio" autoplay :src="songAudio.url" @timeupdate="timeUpdate" @canplay="totalTime"></audio>
     </div>
 </template>
 <script>
 import {getPlaySong, getLyric} from '../api'
+import {playSongInfo} from '../utils/song'
+import {mapGetters} from 'vuex'
+// import lyric from 'lyric-parser'
+import progressBar from '../components/progressBar.vue'
+import playList from './playList.vue'
 export default{
   data () {
     return {
-      id: '',
-      song: {},
-      lyric: {}
+      // 是否显示小屏
+      isShowMini: false,
+      // 歌曲信息
+      songs: {},
+      // 歌曲音频
+      songAudio: {},
+      // 歌词
+      currentLyric: null,
+      // 歌词行数
+      currentLineNum: 0,
+      // 歌曲播放的时间
+      currentTime: 0,
+      // 歌曲总长度
+      duration: 0,
+      // 歌曲进度条
+      progress: 0,
+      // 显示播放列表
+      isshowPlayList: false,
+      // 切换暂停/播放按钮样式
+      togglePlayClass: true
     }
   },
-  created () {
+  computed: {
+    // 获取songid
+    songInfo () {
+      return this.$store.state.songInfo
+    },
+    ...mapGetters([
+      'getPlaying',
+      'showList',
+      'getPlayList',
+      'getCurrentIndex'
+    ]),
+    play () {
+      return this.$store.state.playUI
+    }
+  },
+  watch: {
+    // 监听songid,获取歌曲数据
+    songInfo (newVal, oldVal) {
+      if (newVal) {
+        this.getSong(newVal)
+        this._getSong(newVal.id)
+        this._getLyric(newVal.id)
+      }
+    },
+    getPlaying (newVal) {
+      const audio = this.$refs.audio
+      newVal ? audio.play() : audio.pause()
+      this.togglePlayClass = newVal
+    }
   },
   methods: {
-    _getSong () {
-      getPlaySong(this.id).then(res => {
-        console.log(res)
-        this.song = res.
+    // 获取播放音频
+    _getSong (id) {
+      getPlaySong(id).then(res => {
+        this.songAudio = res.data.data[0]
       })
     },
-    _getLyric () {
-      getLyric(this.id).then(res => {
-        console.log(res)
+    // 获取歌词
+    _getLyric (id) {
+      getLyric(id).then(res => {
+        this.currentLyric = res.data.lrc.lyric
+        /* this.currentLyric = new Lyric(res.data.lrc.lyric, this.handleLyric)
+        if (this.getPlaying) {
+          this.currentLyric.play()
+        } */
       })
+    },
+    // 解析歌词
+    handleLyric (lineNum, txt) {
+      this.currentLineNum = lineNum
+      /* if (lineNum > 5) {
+        let lineEl = this.$refs.lyricLine[lineNum - 5]
+      } else {
+        this.$refs.lyricList.scrollTop(0, 0, 1000)
+      } */
+    },
+    // 获取歌曲信息
+    getSong (song) {
+      this.songs = playSongInfo(song)
+    },
+    // 点击切换播放状态
+    togglePlay () {
+      // 设置播放状态
+      this.$store.commit('setPlaying', !this.getPlaying)
+      // this.getPlaying ? audio.play() : audio.pause()
+    },
+    // 改变播放位置
+    timeUpdate (e) {
+      this.currentTime = e.target.currentTime
+      // 进度条的位置 = 当前的时间长度 / 总长度
+      this.progress = this.currentTime / this.duration
+    },
+    // 总播放时间
+    totalTime (e) {
+      this.duration = this.$refs.audio.duration
+    },
+    // 进度条拖动改变
+    progressChange (position, isMove) {
+      // 判断当前是否是拖动进度条，如果正在拖动进度条则暂停播放
+      isMove ? this.$refs.audio.pause() : this.$refs.audio.play()
+      // 计算当前播放时间，并设置音频的currentTime
+      let currentTime = this.duration * position
+      this.$refs.audio.currentTime = currentTime
+    },
+    // 播放时间格式化
+    format (time) {
+      time = time || 0
+      // 向下取整，将时间转化为分钟
+      let minute = Math.floor(time / 60) || 0
+      // 获取秒数，
+      let second = Math.floor(time % 60)
+      if (second < 10) {
+        second = '0' + second
+      }
+      return minute + ':' + second
+    },
+    // 显示播放列表
+    showPlayList () {
+      this.isshowPlayList = true
+    },
+    // 隐藏播放列表
+    hide () {
+      this.isshowPlayList = false
+    },
+    // 点击显示大屏
+    showFullScreen () {
+      this.$store.commit('toggleScreen', true)
+    },
+    // 上一首
+    prev () {
+      let prevIndex
+      prevIndex = this.getCurrentIndex - 1
+      if (prevIndex < 0) {
+        prevIndex = this.getPlayList.length - 1
+      }
+      this.getPlayList.forEach((currentVal, index, arr) => {
+        if (arr[prevIndex] === currentVal) {
+          this.$store.commit('saveSong', currentVal)
+          this.$store.commit('setPlaying', true)
+          this.$store.commit('setCurrentIndex', currentVal)
+        }
+      })
+    },
+    // 下一首
+    next () {
+      let nextIndex = this.getCurrentIndex + 1
+      if (nextIndex >= this.getPlayList.length) {
+        nextIndex = 0
+      }
+      this.getPlayList.forEach((currentVal, index, arr) => {
+        if (arr[nextIndex] === currentVal) {
+          this.$store.commit('saveSong', currentVal)
+          this.$store.commit('setPlaying', true)
+          this.$store.commit('setCurrentIndex', currentVal)
+        }
+      })
+    },
+    // 切换播放模式
+    changeMode () {
+
+    },
+    // 收回播放界面
+    back () {
+      this.$store.commit('toggleScreen', false)
+      this.isShowMini = true
     }
+  },
+  components: {
+    progressBar,
+    playList
   }
 }
 </script>
@@ -180,6 +362,10 @@ export default{
           box-sizing: border-box;
           border: 15px solid rgba(255, 255, 255, 0.1);
           border-radius: 50%;
+          overflow: hidden;
+          img{
+            width: 100%;
+          }
           .img{
             position: absolute;
             left: 0;
@@ -248,43 +434,13 @@ export default{
       .time-l{
         float: left;
       }
+      .time-r{
+        text-align: right;
+      }
       .progress-bar-wrapper{
         -webkit-box-flex: 1;
         -ms-flex: 1;
         flex: 1;
-        .progress-bar{
-          height: 30px;
-          .bar-inner{
-            position: relative;
-            top: 13px;
-            height: 4px;
-            background: rgba(0, 0, 0, 0.3);
-            .progress{
-              position: absolute;
-              height: 100%;
-              background: #d44439;
-            }
-            .progress-btn-wrapper{
-              position: absolute;
-              left: -8px;
-              top: -13px;
-              width: 30px;
-              height: 30px;
-              .progress-btn{
-                position: relative;
-                top: 7px;
-                left: 7px;
-                -webkit-box-sizing: border-box;
-                box-sizing: border-box;
-                width: 16px;
-                height: 16px;
-                border: 5px solid #f1f1f1;
-                border-radius: 50%;
-                background: #d44439;
-              }
-            }
-          }
-        }
       }
     }
     .operators {
@@ -315,6 +471,94 @@ export default{
         &.i-right {
           text-align: left;
         }
+      }
+    }
+  }
+  .mini-player{
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-box-align: center;
+    -ms-flex-align: center;
+    align-items: center;
+    position: fixed;
+    left: 0;
+    bottom: 0;
+    z-index: 180;
+    width: 100%;
+    height: 60px;
+    background: rgba(255, 255, 255, 0.85);
+    .icon {
+      -webkit-box-flex: 0;
+      -ms-flex: 0 0 40px;
+      flex: 0 0 40px;
+      width: 88px;
+      padding: 0 10px 0 20px;
+      img{
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+      }
+    }
+    .text{
+      display: -webkit-box;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-box-orient: vertical;
+      -webkit-box-direction: normal;
+      -ms-flex-direction: column;
+      flex-direction: column;
+      -webkit-box-pack: center;
+      -ms-flex-pack: center;
+      justify-content: center;
+      -webkit-box-flex: 1;
+      -ms-flex: 1;
+      flex: 1;
+      overflow: hidden;
+      .name {
+        margin-bottom: 2px;
+        line-height: 14px;
+        text-overflow: ellipsis;
+        overflow: hidden;
+        white-space: nowrap;
+        font-size: 14px;
+        color: #2E3030;
+      }
+      .desc {
+        margin-bottom: 2px;
+        line-height: 14px;
+        text-overflow: ellipsis;
+        overflow: hidden;
+        white-space: nowrap;
+        font-size: 14px;
+        color: #2E3030;
+      }
+    }
+    .control {
+      -webkit-box-flex: 0;
+      -ms-flex: 0 0 30px;
+      flex: 0 0 30px;
+      width: 30px;
+      overflow: hidden;
+      margin-right: 20px;
+      .progress-circle{
+        position: relative;
+        i{
+          font-size: 26px;
+        }
+      }
+    }
+  }
+  .lyric-wrapper {
+    width: 80%;
+    margin: 0 auto;
+    overflow: hidden;
+    text-align: center;
+    .currentLyric{
+      p.text{
+        line-height: 40px;
+        color: #c7c7c7;
+        font-size: 14px;
       }
     }
   }

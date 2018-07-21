@@ -56,3 +56,8 @@ export const getPlaySong = (id) => {
 export const getLyric = (id) => {
   return axios.get(`/lyric?id=${id}`)
 }
+
+// 获取歌曲详情
+export const getSongDetail = (id) => {
+  return axios.get(`/song/detail?ids=${id}`)
+}

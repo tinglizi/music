@@ -14,7 +14,7 @@
           </div>
         </div>
       <ul class="search-list">
-        <li class="list-item" v-for="(song, index) in songList" :key="index" @click="selectSong(song.id)">
+        <li class="list-item" v-for="(song, index) in songList" :key="index" @click="selectSong(song)">
           <div class="icon">
             <i></i>
           </div>
@@ -29,6 +29,8 @@
     </div>
 </template>
 <script>
+import {getSongDetail} from '../api'
+import {mapGetters} from 'vuex'
 export default{
   data () {
     return {
@@ -51,13 +53,33 @@ export default{
       this.songList = newval
     }
   },
+  computed: {
+    ...mapGetters([
+      'getPlayList'
+    ])
+  },
   methods: {
     // 选择歌曲
     selectItem (item) {
       let id = item.artists[0].id
       this.$router.push(`/searchView/singer/${id}`)
-    }
+    },
     // 选择单曲
+    selectSong (item) {
+      getSongDetail(item.id).then(res => {
+        let songs = res.data.songs[0]
+        // 保存播放的歌曲信息
+        this.$store.commit('saveSong', songs)
+        // 将歌曲添加到播放列表
+        this.$store.commit('setPlayList', songs)
+        // 设置显示播放歌曲界面
+        this.$store.commit('toggleScreen', true)
+        // 播放歌曲
+        this.$store.commit('togglePlay', true)
+        // 设置当前播放歌曲的索引值
+        this.$store.commit('setCurrentIndex', songs)
+      })
+    }
   }
 }
 </script>
