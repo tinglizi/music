@@ -2,6 +2,7 @@ import Vue from 'vue'
 import Vuex from 'vuex'
 import mutations from './mutations'
 import getters from './getters'
+import {playMode} from '../utils/config'
 Vue.use(Vuex)
 const state = {
   // 存放点击播放的歌曲信息
@@ -15,7 +16,9 @@ const state = {
   // 是否显示播放列表小窗口
   songList: false,
   // 当前播放歌曲的索引
-  currentIndex: -1
+  currentIndex: -1,
+  // 播放模式
+  mode: playMode.sequence
 }
 
 // state ,存放数据

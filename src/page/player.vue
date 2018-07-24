@@ -13,21 +13,21 @@
           <h2 class="subtitle">{{songs.singer}}</h2>
         </div>
         <div class="middle">
-          <div class="middle-l">
+          <div class="middle-l" v-if="!toggleLyric">
             <div class="cd-wrapper">
-              <div class="cd play">
+              <div class="cd play" @click="showLyric">
                 <img :src="songs.picurl" alt="" class="image">
               </div>
             </div>
           </div>
-          <div class="middle-r" style="display: none">
+          <div class="middle-r" v-if="toggleLyric">
             <div class="lyric-wrapper">
-              <div class="currentLyric" v-if="currentLyric">
-                <p ref="lyricLine" class="text" v-for="(line, index) in currentLyric.lines" :key="index">
+              <div class="currentLyric" v-if="currentLyric" ref="lyricBox">
+                <p ref="lyricLine" class="text" v-for="(line, index) in currentLyric" :key="index" :class="currentLineNum === index ? 'current' : ''">
                   {{line.txt}}
                 </p>
               </div>
-              <p class="no-lyric" >没有歌词了</p>
+              <p class="no-lyric">没有歌词了</p>
             </div>
           </div>
         </div>
@@ -40,17 +40,17 @@
             <span class="time time-r">{{format(duration)}}</span>
           </div>
           <div class="operators">
-            <div class="icon i-left" @click="changeMode">
-              <i class="iconfont icon-liebiaoxunhuan mode"></i>
+            <div class="icon i-left" >
+              <i class="iconfont mode" :class="iconMode" @click="changeMode"></i>
             </div>
-            <div class="icon i-left" @click="prev">
-              <i class="iconfont icon-shangyishou1 mode"></i>
+            <div class="icon i-left" >
+              <i class="iconfont icon-shangyishou1 mode" @click="prev"></i>
             </div>
-            <div class="icon i-center" @click="togglePlay">
-              <i class="iconfont mode" :class="togglePlayClass ? 'icon-zanting' : 'icon-bofang'"></i>
+            <div class="icon i-center" >
+              <i class="iconfont mode" :class="togglePlayClass ? 'icon-zanting' : 'icon-bofang'" @click="togglePlay"></i>
             </div>
-            <div class="icon i-right" @click="next">
-              <i class="iconfont icon-shangyishou mode"></i>
+            <div class="icon i-right" >
+              <i class="iconfont icon-shangyishou mode" @click="next"></i>
             </div>
             <div class="icon i-right">
               <i class="iconfont icon-xihuan mode"></i>
@@ -79,18 +79,18 @@
         </div>
       </div>
       <!-- 播放列表 -->
-      <play-list :isShow="isshowPlayList" @hide="hide"></play-list>
+      <play-list :isShow="isshowPlayList" @hide="hide" :iconMode="iconMode"></play-list>
       <!--播放音频-->
-      <audio class="playAudio" ref="audio" autoplay :src="songAudio.url" @timeupdate="timeUpdate" @canplay="totalTime"></audio>
+      <audio class="playAudio" ref="audio" autoplay :src="songAudio.url" @timeupdate="timeUpdate" @canplay="totalTime" @ended="end"></audio>
     </div>
 </template>
 <script>
 import {getPlaySong, getLyric} from '../api'
 import {playSongInfo} from '../utils/song'
 import {mapGetters} from 'vuex'
-// import lyric from 'lyric-parser'
 import progressBar from '../components/progressBar.vue'
 import playList from './playList.vue'
+import {playMode, parseLyric} from '../utils/config'
 export default{
   data () {
     return {
@@ -113,7 +113,11 @@ export default{
       // 显示播放列表
       isshowPlayList: false,
       // 切换暂停/播放按钮样式
-      togglePlayClass: true
+      togglePlayClass: true,
+      // 是否循环播放
+      loop: false,
+      // 切换歌词显示
+      toggleLyric: false
     }
   },
   computed: {
@@ -125,10 +129,21 @@ export default{
       'getPlaying',
       'showList',
       'getPlayList',
-      'getCurrentIndex'
+      'getCurrentIndex',
+      'getMode'
     ]),
     play () {
       return this.$store.state.playUI
+    },
+    // 监听切换播放模式图标
+    iconMode () {
+      if (this.getMode === playMode.sequence) {
+        return 'icon-liebiaoxunhuan'
+      } else if (this.getMode === playMode.loop) {
+        return 'icon-danquxunhuan'
+      } else {
+        return 'icon-suijibofang'
+      }
     }
   },
   watch: {
@@ -156,21 +171,17 @@ export default{
     // 获取歌词
     _getLyric (id) {
       getLyric(id).then(res => {
-        this.currentLyric = res.data.lrc.lyric
-        /* this.currentLyric = new Lyric(res.data.lrc.lyric, this.handleLyric)
-        if (this.getPlaying) {
-          this.currentLyric.play()
-        } */
+        let lyric = res.data.lrc.lyric
+        // 获取歌词并将歌词进行解析
+        this.currentLyric = parseLyric(lyric)
+        // 歌词重载以后 高亮行设置为 0, 歌词的marginTop设置为0
+        this.currentLineNum = 0
+        this.$refs.lyricBox.style.marginTop = 0
       })
     },
-    // 解析歌词
-    handleLyric (lineNum, txt) {
-      this.currentLineNum = lineNum
-      /* if (lineNum > 5) {
-        let lineEl = this.$refs.lyricLine[lineNum - 5]
-      } else {
-        this.$refs.lyricList.scrollTop(0, 0, 1000)
-      } */
+    // 切换显示歌词
+    showLyric () {
+      this.toggleLyric = !this.toggleLyric
     },
     // 获取歌曲信息
     getSong (song) {
@@ -185,8 +196,24 @@ export default{
     // 改变播放位置
     timeUpdate (e) {
       this.currentTime = e.target.currentTime
+      // 遍历歌词数组，判断如果当前时间与歌词时间一致，则设置当前显示行的索引
+      this.currentLyric.forEach((item, index) => {
+        if (this.format(this.currentTime) === this.format(item.time)) {
+          this.currentLineNum = index
+        }
+      })
+      this.handleLyric()
       // 进度条的位置 = 当前的时间长度 / 总长度
       this.progress = this.currentTime / this.duration
+    },
+    // 设置歌词跳转
+    handleLyric () {
+      // 如果当前歌词行数大于5，将lyricBox向上移一行
+      if (this.currentLineNum > 5) {
+        this.$nextTick(() => {
+          this.$refs.lyricBox.style.marginTop = -(this.currentLineNum - 5) * 40 + 'px'
+        })
+      }
     },
     // 总播放时间
     totalTime (e) {
@@ -255,7 +282,23 @@ export default{
     },
     // 切换播放模式
     changeMode () {
-
+      // 设置播放模式
+      let mode = (this.getMode + 1) % 3
+      this.$store.commit('setMode', mode)
+    },
+    // 音频播放完后
+    end () {
+      // 设置循环播放
+      if (this.getMode === 1) {
+        // 设置当前的播放位置从0开始
+        this.$refs.audio.currentTime = 0
+        // 播放完成后再次调用audio播放方法
+        this.$refs.audio.play()
+      } else {
+        // 列表播放
+        // 调用next方法播放下一首
+        this.next()
+      }
     },
     // 收回播放界面
     back () {
@@ -403,6 +446,9 @@ export default{
            line-height:40px;
            color: #c7c7c7;
            font-size: 14px;
+         }
+         .current {
+           color: #fff;
          }
        }
       }

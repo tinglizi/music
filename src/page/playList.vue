@@ -3,7 +3,7 @@
       <div class="list-wrapper" >
         <div class="list-header">
           <div class="title">
-            <i class="iconfont icon-liebiaoxunhuan"></i>
+            <i class="iconfont icon-liebiaoxunhuan" :class="iconMode" @click.stop="changeMode"></i>
             <span class="text">播放顺序 <span class="count">({{songList.length}})</span></span>
             <span class="clear" @click.stop="deleteAll"><i class="iconfont icon-delete"></i></span>
           </div>
@@ -12,7 +12,7 @@
           <ul>
             <li class="item" v-for="(item,index) in songList" :key="index" @click.stop="changSong(item)">
               <i class="iconfont " :class="getCurrentIndex === index ? 'icon-lababofang' : ''"></i>
-              <span>{{songInfo(item)}}{{getCurrentIndex}}</span>
+              <span>{{songInfo(item)}}</span>
               <span class="delete" @click.stop="deleteSong(index)">
                 <i class="iconfont icon-close" ></i>
               </span>
@@ -42,11 +42,12 @@ export default{
       isPlaying: 0
     }
   },
-  props: ['isShow'],
+  props: ['isShow', 'iconMode'],
   computed: {
     ...mapGetters([
       'getPlayList',
-      'getCurrentIndex'
+      'getCurrentIndex',
+      'getMode'
     ])
   },
   watch: {
@@ -61,7 +62,6 @@ export default{
     },
     // 删除指定歌曲
     deleteSong (index) {
-      console.log(this.getCurrentIndex)
       if (index === this.getCurrentIndex) {
         let newIdx = index + 1
         this.songList.forEach((currentItem, index1, arr) => {
@@ -110,6 +110,12 @@ export default{
       this.$store.commit('togglePlay', true)
       // 设置当前播放歌曲的索引值
       this.$store.commit('setCurrentIndex', item)
+    },
+    // 切换播放模式
+    changeMode () {
+      // 设置播放模式
+      let mode = (this.getMode + 1) % 3
+      this.$store.commit('setMode', mode)
     }
   },
   components: {

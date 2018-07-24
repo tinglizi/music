@@ -85,9 +85,6 @@ export default{
     // 结束
     touchEnd () {
       this.touch.initiated = false
-      /* let barWidth = this.$refs.progressBar.clientWidth - btnWidth
-      let percents = this.$refs.progress.clientWidth / barWidth
-      this.$emit('percentChange', percents) */
       // 设置播放位置
       this.setPlayPosition(false)
     },

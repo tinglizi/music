@@ -14,6 +14,10 @@ const getters = {
   // 获取当前播放歌曲的索引值
   getCurrentIndex (state) {
     return state.currentIndex
+  },
+  // 获取播放模式
+  getMode (state) {
+    return state.mode
   }
 }
 export default getters

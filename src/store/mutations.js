@@ -49,6 +49,10 @@ const mutations = {
     state.songList = false
     // 停止播放歌曲
     state.playing = false
+  },
+  // 设置播放模式
+  setMode (state, mode) {
+    state.mode = mode
   }
 }
 
