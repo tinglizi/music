@@ -8,6 +8,7 @@ import Singer from '../page/singer.vue'
 import singerDetail from '../page/singerDetail.vue'
 import Search from '../page/search.vue'
 import SearchView from '../page/searchView.vue'
+import User from '../page/user.vue'
 Vue.use(Router)
 
 export default new Router({
@@ -56,6 +57,11 @@ export default new Router({
           component: singerDetail
         }
       ]
+    },
+    {
+      path: '/user',
+      name: 'user',
+      component: User
     }
   ]
 })

@@ -20,8 +20,8 @@
               </div>
             </div>
           </div>
-          <div class="middle-r" v-if="toggleLyric">
-            <div class="lyric-wrapper">
+          <div class="middle-r" v-if="toggleLyric" >
+            <div class="lyric-wrapper" @click="showLyric">
               <div class="currentLyric" v-if="currentLyric" ref="lyricBox">
                 <p ref="lyricLine" class="text" v-for="(line, index) in currentLyric" :key="index" :class="currentLineNum === index ? 'current' : ''">
                   {{line.txt}}
@@ -53,7 +53,7 @@
               <i class="iconfont icon-shangyishou mode" @click="next"></i>
             </div>
             <div class="icon i-right">
-              <i class="iconfont icon-xihuan mode"></i>
+              <i class="iconfont mode" @click="collect" :class="isCollect ? 'icon-asmkticon0242' : 'icon-xihuan'"></i>
             </div>
           </div>
         </div>
@@ -117,7 +117,11 @@ export default{
       // 是否循环播放
       loop: false,
       // 切换歌词显示
-      toggleLyric: false
+      toggleLyric: false,
+      // 收藏
+      isCollect: false,
+      // 收藏列表
+      collectList: []
     }
   },
   computed: {
@@ -130,7 +134,8 @@ export default{
       'showList',
       'getPlayList',
       'getCurrentIndex',
-      'getMode'
+      'getMode',
+      'getCollect'
     ]),
     play () {
       return this.$store.state.playUI
@@ -154,11 +159,15 @@ export default{
         this._getSong(newVal.id)
         this._getLyric(newVal.id)
       }
+      this.collects()
     },
     getPlaying (newVal) {
       const audio = this.$refs.audio
       newVal ? audio.play() : audio.pause()
       this.togglePlayClass = newVal
+    },
+    getCollect (newVal) {
+      this.collectList = newVal
     }
   },
   methods: {
@@ -176,12 +185,19 @@ export default{
         this.currentLyric = parseLyric(lyric)
         // 歌词重载以后 高亮行设置为 0, 歌词的marginTop设置为0
         this.currentLineNum = 0
-        this.$refs.lyricBox.style.marginTop = 0
+        this.$nextTick(() => {
+          if (this.$refs.lyricBox) {
+            this.$refs.lyricBox.style.marginTop = 0
+          }
+        })
       })
     },
     // 切换显示歌词
     showLyric () {
       this.toggleLyric = !this.toggleLyric
+      if (this.$refs.lyricBox) {
+        this.$refs.lyricBox.style.marginTop = 0
+      }
     },
     // 获取歌曲信息
     getSong (song) {
@@ -211,7 +227,9 @@ export default{
       // 如果当前歌词行数大于5，将lyricBox向上移一行
       if (this.currentLineNum > 5) {
         this.$nextTick(() => {
-          this.$refs.lyricBox.style.marginTop = -(this.currentLineNum - 5) * 40 + 'px'
+          if (this.$refs.lyricBox.style) {
+            this.$refs.lyricBox.style.marginTop = -(this.currentLineNum - 5) * 40 + 'px'
+          }
         })
       }
     },
@@ -298,6 +316,29 @@ export default{
         // 列表播放
         // 调用next方法播放下一首
         this.next()
+      }
+    },
+    // 收藏当前歌曲
+    collect () {
+      this.isCollect = !this.isCollect
+      // 点击收藏为true
+      if (this.isCollect) {
+        this.$store.commit('setCollect', this.songInfo)
+      } else {
+        // 取消收藏
+        this.$store.commit('cancelCollect', this.songInfo)
+      }
+    },
+    // 判断当前歌曲是否收藏
+    collects () {
+      for (let i in this.collectList) {
+        // 判断当前歌曲是否收藏，收藏则显示红色，否则不显示
+        if (this.songInfo.al.name === this.collectList[i].al.name) {
+          this.isCollect = true
+          return
+        } else {
+          this.isCollect = false
+        }
       }
     },
     // 收回播放界面
@@ -516,6 +557,9 @@ export default{
         }
         &.i-right {
           text-align: left;
+        }
+        .icon-asmkticon0242{
+          color: #f00;
         }
       }
     }

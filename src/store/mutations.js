@@ -1,4 +1,5 @@
 let newPlayList = []
+let newCollect = []
 const mutations = {
   // 保存播放的歌曲信息
   saveSong (state, info) {
@@ -53,6 +54,23 @@ const mutations = {
   // 设置播放模式
   setMode (state, mode) {
     state.mode = mode
+  },
+  // 添加收藏
+  setCollect (state, item) {
+    // 去除重复的列表值
+    // 将item的name值追加到newArr中，如果不存在则添加
+    if (newCollect.indexOf(item.name) === -1 || newCollect.length === 0) {
+      newCollect.push(item.name)
+      state.collect.push(item)
+    }
+  },
+  // 取消收藏
+  cancelCollect (state, item) {
+    for (var i in state.collect) {
+      if (item === state.collect[i]) {
+        state.collect.splice(i, 1)
+      }
+    }
   }
 }
 

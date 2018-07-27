@@ -18,7 +18,11 @@ const state = {
   // 当前播放歌曲的索引
   currentIndex: -1,
   // 播放模式
-  mode: playMode.sequence
+  mode: playMode.sequence,
+  // 收藏列表
+  collect: [],
+  // 收藏状态
+  collectState: false
 }
 
 // state ,存放数据

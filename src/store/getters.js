@@ -1,4 +1,8 @@
 const getters = {
+  // 获取播放歌曲信息
+  getPlaySongInfo (state) {
+    return state.songInfo
+  },
   // 获取是否播放
   getPlaying (state) {
     return state.playing
@@ -18,6 +22,10 @@ const getters = {
   // 获取播放模式
   getMode (state) {
     return state.mode
+  },
+  // 获取收藏列表
+  getCollect (state) {
+    return state.collect
   }
 }
 export default getters
