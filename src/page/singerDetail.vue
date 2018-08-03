@@ -13,7 +13,7 @@
           <div class="list-text">{{artist.name}}</div>
         </div>
         <div class="music-list-wrap">
-          <div class="sequence-play">
+          <div class="sequence-play" @click.stop="playAll(hotSongs)">
             <i class="iconfont icon-bofang"></i> 播放全部<span>&nbsp;(共{{hotSongs.length}}首)</span>
           </div>
           <song-list :songs="hotSongs"></song-list>
@@ -23,7 +23,7 @@
   </div>
 </template>
 <script>
-import {getArtist} from '../api'
+import {getArtist, getSongDetail} from '../api'
 import songList from '../components/songLists.vue'
 export default{
   data () {
@@ -52,9 +52,13 @@ export default{
         }
         // 设置颜色透明度，滚动高度/图片的高度
         let percent = Math.abs(scrollY / this.imgHeight)
-        this.$refs.header.style.background = `rgba(212, 68, 57, ${percent})`
+        if (this.$refs.header) {
+          this.$refs.header.style.background = `rgba(212, 68, 57, ${percent})`
+        }
       } else {
-        this.$refs.header.style.background = 'rgba(212, 68, 57, 0)'
+        if (this.$refs.header) {
+          this.$refs.header.style.background = 'rgba(212, 68, 57, 0)'
+        }
       }
     })
   },
@@ -66,6 +70,28 @@ export default{
           this.hotSongs = res.data.hotSongs
           this.artist = res.data.artist
         }
+      })
+    },
+    // 播放全部
+    playAll (items) {
+      // 遍历所有歌曲获取歌曲详情
+      items.forEach((item, index) => {
+        getSongDetail(item.id).then(res => {
+          let songs = res.data.songs[0]
+          // 将歌曲添加到播放列表
+          this.$store.commit('setPlayList', songs)
+          // 如果没有当前没有播放歌曲，则播放列表里面的第一首
+          // if (!this.$store.getters.getPlaying) {
+          // 保存播放的歌曲信息
+          this.$store.commit('saveSong', this.$store.getters.getPlayList[0])
+          // 设置显示播放歌曲界面
+          this.$store.commit('toggleScreen', true)
+          // 播放歌曲
+          this.$store.commit('togglePlay', true)
+          // 设置当前播放歌曲的索引值
+          this.$store.commit('setCurrentIndex', this.$store.getters.getPlayList[0])
+          // }
+        })
       })
     },
     back () {

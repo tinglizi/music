@@ -1,6 +1,7 @@
 import Vue from 'vue'
 import Vuex from 'vuex'
 import mutations from './mutations'
+import actions from './actions'
 import getters from './getters'
 import {playMode} from '../utils/config'
 Vue.use(Vuex)
@@ -22,7 +23,9 @@ const state = {
   // 收藏列表
   collect: [],
   // 收藏状态
-  collectState: false
+  collectState: false,
+  // loading
+  loading: false
 }
 
 // state ,存放数据
@@ -33,5 +36,6 @@ const state = {
 export default new Vuex.Store({
   state,
   mutations,
-  getters
+  getters,
+  actions
 })

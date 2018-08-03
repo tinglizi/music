@@ -10,9 +10,9 @@
         </div>
         <div class="list-content">
           <ul>
-            <li class="item" v-for="(item,index) in songList" :key="index" @click.stop="changSong(item)">
+            <li class="item" v-for="(item,index) in songList" :key="index" @click.stop="changSong(item, true)">
               <i class="iconfont " :class="getCurrentIndex === index ? 'icon-lababofang' : ''"></i>
-              <span>{{songInfo(item)}}</span>
+              <span class="singtitle">{{songInfo(item)}}</span>
               <span class="delete" @click.stop="deleteSong(index)">
                 <i class="iconfont icon-close" ></i>
               </span>
@@ -62,23 +62,21 @@ export default{
     },
     // 删除指定歌曲
     deleteSong (index) {
-      if (index === this.getCurrentIndex) {
-        let newIdx = index + 1
-        this.songList.forEach((currentItem, index1, arr) => {
-          if (newIdx < 0) {
-            newIdx = arr.length - 1
-          }
-          if (newIdx >= arr.length) {
-            newIdx = arr.length - 1
-          }
-          this.changSong(arr[newIdx])
-        })
-      }
-      // 如果整个列表没有歌曲，就清空不显示小窗口
-      if (!this.songList.length) {
-        this.confirm()
-      }
+      // 删除点击的歌曲
       this.$store.commit('delPlayList', index)
+      console.log(this.songList)
+      if (index >= this.songList.length) {
+        index = 0
+      }
+      // 如果整个列表没有歌曲，就清空不显示小窗口,
+      if (this.songList.length <= 0) {
+        this.hide()
+        this.$store.commit('setPlaying', false)
+        this.$store.commit('hidemini', false)
+        return false
+      }
+      // 设置索引值为当前索引,播放下一首
+      this.changSong(this.songList[index])
     },
     // 隐藏播放歌曲列表
     hide () {
@@ -99,17 +97,26 @@ export default{
       this.closeAlert()
     },
     // 切换播放列表的歌曲
-    changSong (item) {
+    changSong (item, state) {
+      console.log('222222222')
       // 保存播放的歌曲信息
       this.$store.commit('saveSong', item)
       // 将歌曲添加到播放列表
       this.$store.commit('setPlayList', item)
-      // 设置显示播放歌曲界面
-      this.$store.commit('toggleScreen', true)
       // 播放歌曲
       this.$store.commit('togglePlay', true)
       // 设置当前播放歌曲的索引值
       this.$store.commit('setCurrentIndex', item)
+      if (state) {
+        this.showScreen()
+      }
+    },
+    // 切换时显示界面
+    showScreen () {
+      // 设置显示播放歌曲界面
+      this.$store.commit('toggleScreen', true)
+      // 隐藏播放歌曲列表
+      this.hide()
     },
     // 切换播放模式
     changeMode () {
@@ -176,6 +183,7 @@ export default{
       .list-content {
         max-height: 240px;
         overflow: hidden;
+        overflow-y: scroll;
         .item {
           display: -webkit-box;
           display: -ms-flexbox;
@@ -187,6 +195,13 @@ export default{
           padding: 0 30px 0 20px;
           overflow: hidden;
           position: relative;
+          span.singtitle{
+            width: 80%;
+            display: inline-block;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+          }
           .icon-lababofang{
             color: #d44439;
             margin-right: 5px;

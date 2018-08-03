@@ -35,7 +35,6 @@ export default{
           let list = res.data.playlist
           list.top = res.data.playlist.tracks.slice(0, 3)
           this.playList.push(list)
-          console.log(this.playList)
         })
       }
     },
@@ -50,6 +49,7 @@ export default{
 <style lang="less" scoped>
   .ranking-list{
     margin-top: 98px;
+    overflow-x: hidden;
   }
   .item{
    margin: 0 10px;

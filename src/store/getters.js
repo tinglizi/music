@@ -26,6 +26,10 @@ const getters = {
   // 获取收藏列表
   getCollect (state) {
     return state.collect
+  },
+  // 获取loading状态
+  getLoading (state) {
+    return state.loading
   }
 }
 export default getters

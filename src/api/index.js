@@ -1,6 +1,24 @@
 import axios from 'axios'
+import store from '../store/index'
 axios.defaults.baseURL = 'http://120.79.162.149:3000'
 axios.defaults.timeout = 3000
+
+// 请求拦截
+axios.interceptors.request.use(config => {
+  // console.log('请求中')
+  store.dispatch('showLoad')
+  return config
+}, error => {
+  return Promise.reject(error)
+})
+// 响应拦截
+axios.interceptors.response.use(config => {
+  // console.log('返回数据了 ')
+  store.dispatch('hideLoad')
+  return config
+}, error => {
+  return Promise.reject(error)
+})
 // 获取轮播图
 export const banner = () => {
   return axios.get('/banner')

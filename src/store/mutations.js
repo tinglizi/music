@@ -1,3 +1,4 @@
+import {SHOWLOADING, HIDELOADING} from './types'
 let newPlayList = []
 let newCollect = []
 const mutations = {
@@ -16,6 +17,10 @@ const mutations = {
     // 小屏取相反值
     state.songList = !status
   },
+  // 隐藏小屏播放界面
+  hidemini (state, status) {
+    state.songList = status
+  },
   // 设置播放/暂停歌曲
   setPlaying (state, status) {
     state.playing = status
@@ -29,6 +34,13 @@ const mutations = {
       state.playList.push(item)
     }
   },
+  // 设置播放全部
+  setPlayAll (state, items) {
+    items.forEach((item, index) => {
+      state.playList.push(item)
+    })
+    console.log(state.playList.length)
+  },
   // 设置当前播放歌曲的索引值
   setCurrentIndex (state, item) {
     state.playList.forEach(function (currentItem, index) {
@@ -40,6 +52,7 @@ const mutations = {
   // 删除一首播放歌曲
   delPlayList (state, index) {
     state.playList.splice(index, 1)
+    console.log('111111111')
   },
   // 删除播放列表所有歌曲
   delAllPlayList (state) {
@@ -71,6 +84,14 @@ const mutations = {
         state.collect.splice(i, 1)
       }
     }
+  },
+  //  显示loading
+  [SHOWLOADING] (state, status) {
+    state.loading = true
+  },
+  //  隐藏loading
+  [HIDELOADING] (state, status) {
+    state.loading = false
   }
 }
 

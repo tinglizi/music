@@ -15,9 +15,9 @@
               <i class="iconfont icon-yinle"></i>{{Math.floor(detailList.playCount / 1000)}}万
             </div>
           </div>
-          <div class="music-list-wrap">
-            <div class="sequence-play">
-              <i class="iconfont icon-bofang"></i> 播放全部<span>&nbsp;(共{{detailList.length}}首)</span>
+          <div class="music-list-wrap" v-if="detailList.tracks">
+            <div class="sequence-play" @click.stop="playAll(detailList.tracks)">
+              <i class="iconfont icon-bofang"></i> 播放全部<span>&nbsp;(共{{detailList.tracks.length}}首)</span>
             </div>
             <song-list :songs="detailList.tracks"></song-list>
           </div>
@@ -26,7 +26,7 @@
     </div>
 </template>
 <script>
-import {recommendListDetail} from '../api'
+import {recommendListDetail, getSongDetail} from '../api'
 import songList from '../components/songLists.vue'
 export default{
   data () {
@@ -41,7 +41,9 @@ export default{
   },
   mounted () {
     // 获取头部图片的高度
-    this.imgHeight = this.$refs.bgImg.clientHeight
+    if (this.$refs.bgImg) {
+      this.imgHeight = this.$refs.bgImg.clientHeight
+    }
     // 监听window的滚动事件
     window.addEventListener('scroll', () => {
       // 判断滚动条是否大于0，大于则将头部的背景颜色更改
@@ -54,9 +56,13 @@ export default{
         }
         // 设置颜色透明度，滚动高度/图片的高度
         let percent = Math.abs(scrollY / this.imgHeight)
-        this.$refs.header.style.background = `rgba(212, 68, 57, ${percent})`
+        if (this.$refs.header) {
+          this.$refs.header.style.background = `rgba(212, 68, 57, ${percent})`
+        }
       } else {
-        this.$refs.header.style.background = 'rgba(212, 68, 57, 0)'
+        if (this.$refs.header) {
+          this.$refs.header.style.background = 'rgba(212, 68, 57, 0)'
+        }
       }
     })
   },
@@ -71,6 +77,28 @@ export default{
     },
     back () {
       this.$router.go(-1)
+    },
+    // 播放全部
+    playAll (items) {
+      // 遍历所有歌曲获取歌曲详情
+      items.forEach((item, index) => {
+        getSongDetail(item.id).then(res => {
+          let songs = res.data.songs[0]
+          // 将歌曲添加到播放列表
+          this.$store.commit('setPlayList', songs)
+          // 如果没有当前没有播放歌曲，则播放列表里面的第一首
+          // if (!this.$store.getters.getPlaying) {
+          // 保存播放的歌曲信息
+          this.$store.commit('saveSong', this.$store.getters.getPlayList[0])
+          // 设置显示播放歌曲界面
+          this.$store.commit('toggleScreen', true)
+          // 播放歌曲
+          this.$store.commit('togglePlay', true)
+          // 设置当前播放歌曲的索引值
+          this.$store.commit('setCurrentIndex', this.$store.getters.getPlayList[0])
+          // }
+        })
+      })
     }
   },
   components: {

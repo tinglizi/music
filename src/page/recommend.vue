@@ -31,7 +31,7 @@
       <div class="recommend-song">
         <h2>推荐歌曲</h2>
         <div class="song-list">
-          <div class="song-item" v-for="(item,index) in recommendSongs" :key="index">
+          <div class="song-item" v-for="(item,index) in recommendSongs" :key="index" @click="selectSong(item)">
             <div class="songList">
               <div class="img recommens">
                 <img v-lazy="item.picurl">
@@ -45,7 +45,7 @@
     </div>
 </template>
 <script>
-import { banner, recommendList, recommendSong } from '../api/index'
+import { banner, recommendList, recommendSong, getSongDetail } from '../api/index'
 import {createRecommendSong} from '../utils/song'
 export default{
   data () {
@@ -90,6 +90,22 @@ export default{
     selectList (item) {
       this.$router.push({
         path: `/musicList/${item.id}`
+      })
+    },
+    // 选择歌曲
+    selectSong (item) {
+      getSongDetail(item.id).then(res => {
+        let songs = res.data.songs[0]
+        // 保存播放的歌曲信息
+        this.$store.commit('saveSong', songs)
+        // 将歌曲添加到播放列表
+        this.$store.commit('setPlayList', songs)
+        // 设置显示播放歌曲界面
+        this.$store.commit('toggleScreen', true)
+        // 播放歌曲
+        this.$store.commit('togglePlay', true)
+        // 设置当前播放歌曲的索引值
+        this.$store.commit('setCurrentIndex', songs)
       })
     }
   }

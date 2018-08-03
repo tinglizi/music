@@ -2,14 +2,17 @@
   <div id="app">
     <router-view/>
     <player></player>
+    <loading></loading>
   </div>
 </template>
 <script>
 import player from './page/player.vue'
+import loading from './components/loading.vue'
 export default {
   name: 'App',
   components: {
-    player
+    player,
+    loading
   }
 }
 </script>

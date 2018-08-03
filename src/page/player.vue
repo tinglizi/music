@@ -227,7 +227,7 @@ export default{
       // 如果当前歌词行数大于5，将lyricBox向上移一行
       if (this.currentLineNum > 5) {
         this.$nextTick(() => {
-          if (this.$refs.lyricBox.style) {
+          if (this.$refs.lyricBox) {
             this.$refs.lyricBox.style.marginTop = -(this.currentLineNum - 5) * 40 + 'px'
           }
         })
@@ -400,6 +400,7 @@ export default{
       color: #f1f1f1;
       text-align: center;
       margin-top: 3px;
+
     }
     .subtitle{
       width: 70%;
