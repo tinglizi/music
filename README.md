@@ -1,4 +1,4 @@
-# music
+# # 模仿 网易云音乐  vue+museUI+vuex
 
 > A Vue.js project
 
